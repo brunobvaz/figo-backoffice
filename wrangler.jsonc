@@ -1,8 +1,16 @@
 {
+  "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "figo-backoffice",
+  "main": "worker/index.js",
   "compatibility_date": "2026-09-17",
   "assets": {
     "directory": "./dist",
-    "not_found_handling": "single-page-application"
-  }
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api", "/api/*", "/uploads", "/uploads/*"]
+  },
+  "vars": {
+    "BACKEND_ORIGIN": "https://figo-backend.onrender.com"
+  },
+  "preview_urls": false
 }

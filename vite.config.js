@@ -9,6 +9,9 @@ export default defineConfig(({ mode }) => {
   };
   return {
     plugins: [react()],
+    // Cloudflare serves the API through the Worker on the frontend's own origin.
+    // An existing local .env must never embed a cross-site API URL in this build.
+    define: mode === 'cloudflare' ? { 'import.meta.env.VITE_API_URL': JSON.stringify('/api/v1') } : {},
     server: { host: '127.0.0.1', port: 5173, strictPort: true, proxy },
     preview: { host: '127.0.0.1', port: 5173, strictPort: true, proxy },
   };

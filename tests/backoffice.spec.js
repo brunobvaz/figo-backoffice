@@ -154,7 +154,7 @@ test('destaca e retira um anúncio com persistência e reflexo na API pública d
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await page.reload();
   await expect(page.getByText('★ Em destaque')).toBeVisible();
-  const response = await page.request.get('/api/v1/products?featured=true');
+  const response = await page.request.get('http://127.0.0.1:3101/api/v1/products?featured=true');
   const data = (await response.json()).data;
   expect(data.items).toHaveLength(1);
   expect(data.items[0]).toMatchObject({ title: 'Mel de rosmaninho', featured: true });
@@ -163,7 +163,32 @@ test('destaca e retira um anúncio com persistência e reflexo na API pública d
   await checkbox.uncheck();
   await page.getByRole('button', { name: 'Guardar alterações' }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
-  const cleared = await page.request.get('/api/v1/products?featured=true');
+  const cleared = await page.request.get('http://127.0.0.1:3101/api/v1/products?featured=true');
   expect((await cleared.json()).data.items).toHaveLength(0);
   await expect(page.getByText('★ Em destaque')).toHaveCount(0);
+});
+
+test('Cloudflare: rotas diretas, headers e sessão segura no mesmo domínio', async ({ page, context }) => {
+  test.skip(process.env.E2E_CLOUDFLARE !== '1', 'Requer o Worker local.');
+  const response = await page.goto('/anuncios');
+  expect(response.headers()['x-frame-options']).toBe('DENY');
+  expect(response.headers()['content-security-policy']).toContain("connect-src 'self'");
+  await expect(page.getByRole('heading', { name: 'Bem-vindo de volta.' })).toBeVisible();
+  await login(page);
+  const cookies = await context.cookies();
+  expect(cookies.find(cookie => cookie.name === 'figo_admin')).toMatchObject({
+    domain: 'localhost', path: '/api/v1/admin', httpOnly: true, secure: true, sameSite: 'Strict',
+  });
+  const session = await page.request.get('/api/v1/admin/auth/me', {
+    headers: { 'X-Figo-Backoffice': '1' },
+  });
+  expect(session.status()).toBe(200);
+  expect(session.headers()['cache-control']).toBe('no-store');
+  expect((await session.json()).data.admin.email).toBe('admin@figo.test');
+  const blocked = await page.request.get('/api/v1/admin/auth/me');
+  expect(blocked.status()).toBe(403);
+  expect(blocked.headers()['content-type']).toContain('application/json');
+  const missing = await page.request.get('/api/not-a-route');
+  expect(missing.status()).toBe(404);
+  expect(missing.headers()['content-type']).toContain('application/json');
 });

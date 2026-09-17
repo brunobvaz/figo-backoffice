@@ -6,7 +6,14 @@ const mongoose = requireBackend('mongoose');
 const argon2 = requireBackend('argon2');
 await import('../../backend/tests/setupEnv.js');
 const backofficePort = Number(process.env.E2E_PORT || 5174);
-process.env.BACKOFFICE_ORIGIN = `http://localhost:${backofficePort},http://127.0.0.1:${backofficePort}`;
+const protocol = process.env.E2E_CLOUDFLARE === '1' ? 'https' : 'http';
+process.env.BACKOFFICE_ORIGIN = `${protocol}://localhost:${backofficePort},${protocol}://127.0.0.1:${backofficePort}`;
+if (process.env.E2E_CLOUDFLARE === '1') {
+  // Exercise real Secure/HttpOnly/SameSite production cookies on local HTTPS.
+  process.env.NODE_ENV = 'production';
+  process.env.RESEND_API_KEY = 'test-only-no-email-sent';
+  process.env.EMAIL_FROM = 'Figo Tests <noreply@figo.test>';
+}
 const mongo = await MongoMemoryServer.create();
 await mongoose.connect(mongo.getUri());
 const { app } = await import('../../backend/src/app.js');
