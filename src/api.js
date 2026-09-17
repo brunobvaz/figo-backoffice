@@ -6,7 +6,6 @@ export function queryString(values) {
     Object.entries(values).filter(([, value]) => value !== '' && value != null)
   ).toString();
 }
-
 export async function api(path, { body, method = 'GET', signal, file = false } = {}) {
   let response;
   try {
