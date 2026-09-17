@@ -7,10 +7,10 @@
     "directory": "./dist",
     "binding": "ASSETS",
     "not_found_handling": "single-page-application",
-    "run_worker_first": ["/api", "/api/*", "/uploads", "/uploads/*"]
+    "run_worker_first": ["/api", "/api/*", "/uploads", "/uploads/*"],
   },
   "vars": {
-    "BACKEND_ORIGIN": "https://figo-backend.onrender.com"
+    "BACKEND_ORIGIN": "https://figo-backend.onrender.com",
   },
-  "preview_urls": false
+  "preview_urls": false,
 }

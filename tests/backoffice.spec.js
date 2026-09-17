@@ -168,7 +168,10 @@ test('destaca e retira um anúncio com persistência e reflexo na API pública d
   await expect(page.getByText('★ Em destaque')).toHaveCount(0);
 });
 
-test('Cloudflare: rotas diretas, headers e sessão segura no mesmo domínio', async ({ page, context }) => {
+test('Cloudflare: rotas diretas, headers e sessão segura no mesmo domínio', async ({
+  page,
+  context,
+}) => {
   test.skip(process.env.E2E_CLOUDFLARE !== '1', 'Requer o Worker local.');
   const response = await page.goto('/anuncios');
   expect(response.headers()['x-frame-options']).toBe('DENY');
@@ -176,8 +179,12 @@ test('Cloudflare: rotas diretas, headers e sessão segura no mesmo domínio', as
   await expect(page.getByRole('heading', { name: 'Bem-vindo de volta.' })).toBeVisible();
   await login(page);
   const cookies = await context.cookies();
-  expect(cookies.find(cookie => cookie.name === 'figo_admin')).toMatchObject({
-    domain: 'localhost', path: '/api/v1/admin', httpOnly: true, secure: true, sameSite: 'Strict',
+  expect(cookies.find((cookie) => cookie.name === 'figo_admin')).toMatchObject({
+    domain: 'localhost',
+    path: '/api/v1/admin',
+    httpOnly: true,
+    secure: true,
+    sameSite: 'Strict',
   });
   const session = await page.request.get('/api/v1/admin/auth/me', {
     headers: { 'X-Figo-Backoffice': '1' },

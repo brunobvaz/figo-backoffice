@@ -2,6 +2,8 @@
 
 Projeto React JavaScript + Vite para administrar o backend existente em `../backend`. Interface em português de Portugal, baseada no mockup Dashboard.png, com o nome e a mascote da Figo. Inclui Dashboard, Anúncios, Utilizadores, Categorias, Transações e Relatórios.
 
+Deploy preparado para **Cloudflare Workers**, com o backend no Render. Consulta [CLOUDFLARE.md](./CLOUDFLARE.md) para publicar em `https://admin.figo-app.com`.
+
 ## Executar localmente
 
 Requisitos: Node.js 22.12+ e o backend com MongoDB configurado.
@@ -41,13 +43,18 @@ Para automação controlada, o comando de criação aceita `ADMIN_NAME`, `ADMIN_
 
 ## Produção
 
-1. Publica primeiro as alterações em `../backend`.
-2. Define `NODE_ENV=production` e `BACKOFFICE_ORIGIN` com a origem HTTPS exata do frontend (sem barra final). Várias origens podem ser separadas por vírgulas. O backend mantém os requisitos de ambiente que já existiam.
-3. Executa `npm ci && npm run build` neste projeto e serve `dist/` por HTTPS, com fallback das rotas do frontend para `index.html`.
-4. Encaminha `/api/v1/admin/` e `/uploads/` para o backend através do mesmo domínio público. Conserva o header `Origin`, os cookies e `Set-Cookie`. Este modelo evita cookies entre sites e não requer segredos no frontend. Consulta `nginx.example.conf` para um exemplo a adaptar.
-5. Cria o primeiro administrador com `npm run admin:create`, no ambiente do backend e na base pretendida.
+O destino configurado é Cloudflare Workers com Static Assets. `wrangler.jsonc` publica `dist/` e o Worker que encaminha `/api/v1/admin/` e as imagens para `https://figo-backend.onrender.com`. As rotas do React têm fallback para `index.html`; rotas desconhecidas da API devolvem JSON com erro.
 
-`VITE_API_URL` é público e não deve conter segredos. O valor recomendado é `/api/v1`. Um endereço direto só deve ser usado quando frontend e API são do mesmo site, com HTTPS e origens autorizadas; cookies `SameSite=Strict` não funcionam entre sites diferentes. `npm run preview` serve para validação local, não como servidor de produção.
+Todos os builds usam `/api/v1` no mesmo domínio do frontend, mesmo que o `.env` local tenha um URL direto. Altera o destino no `BACKEND_ORIGIN` de `wrangler.jsonc`. O backend deve permitir `https://admin.figo-app.com` em `BACKOFFICE_ORIGIN` e ter `NODE_ENV=production`. Mantém os restantes requisitos de ambiente do backend e as origens existentes da app.
+
+```sh
+npm ci
+npm run deploy:check # compila e valida; não publica
+# Depois de configurar o Render e autenticar o Wrangler:
+npm run deploy
+```
+
+Para outros servidores, `nginx.example.conf` exemplifica o mesmo modelo de proxy. `npm run preview` serve apenas para validação local.
 
 ## Validação
 
@@ -59,11 +66,16 @@ npm test
 # Frontend: compilação
 cd ../backoffice
 npm run build
+npm run test:worker
+npm run deploy:check
 
 # Navegador: login, dashboard, pesquisa, edição, suspensão, CSV e mobile
 npx playwright install chromium
 npm run test:e2e
+# Build real + Worker local HTTPS + cookies de produção + base temporária
+npm run test:e2e:cloudflare
 ```
 
-Os testes de navegador usam exclusivamente `tests/api-server.mjs`, um MongoDB temporário e dados fictícios. Precisam das dependências do backend instaladas, portas 3101 e 5174 disponíveis e permissão para iniciar processos locais. Não leem nem escrevem na base da aplicação. As capturas de validação ficam em `test-results/` e não são versionadas.
+Os testes de navegador usam exclusivamente `tests/api-server.mjs`, um MongoDB temporário e dados fictícios. Precisam das dependências do backend instaladas, porta 3101 e porta 5174 (Vite) ou 8788 (Worker HTTPS) disponíveis, e permissão para iniciar processos locais. Não leem nem escrevem na base da aplicação nem chamam o Render. As capturas de validação ficam em `test-results/` e não são versionadas.
+
 # figo-backoffice
